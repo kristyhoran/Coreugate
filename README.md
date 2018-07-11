@@ -1,4 +1,4 @@
-# A Nextflow pipeline for cgMLST
+# COREugate - A Nextflow pipeline for cgMLST
 ## From reads to cgMLST profile.
 
 This is a simple pipeline that allows the user to input paired-end reads and will output a cgMLST profile for the isolates as well as statistics for allele calling.
@@ -46,7 +46,7 @@ nextflow run kristyhoran/Coreugate --fastq 'data/*_{1,2}*' --schemaPath 'schemaP
 ### Things to note
 * It is improtant to wrap the pipeline arguments in single quotes, unless they are supposed to be passed as a number as seen above for `--contigs 85`. Nextflow arguments can also be included, these do not need to be wrapped in quotes. An example of this can be seen above, when adding `-profile spades` to the command. `spades` does not need to be in quotes.
 
-* If you interrupt the pipeline or want to go back and add isolates later on the flag -resume may be addedd to the end of the command, providing you run it from within the original folder.
+* If you interrupt the pipeline or want to go back and add isolates later on the flag `-resume` may be addedd to the end of the command, providing you run it from within the original folder.
 
 * When setting up the file structure for a project, it is advisable to have reads named with the a meaningful name for later analysis, the sample name is used throughout to identify the samples at different steps.
 
