@@ -6,36 +6,18 @@ log.info "Version ${coreugate_version}".center(60)
 log.info "".center(60, "=")
 
 
-println params.assemble
+Channel
+        .fromFilePairs( params.fastq )
+       	.ifEmpty { error "Can't find any reads matching : ${ params.fastq }" }
+        .set { fastq_input }
+log.info "Set input channel for assembly"
 
-
-if (params.fasta != 'none') {
-	
-	qc_input = Channel.fromPath( 'assembly/*' )
-	log.info "Set input channel".center(60)
-			}
-if (params.assemble == 'enable') {
-
-	Channel
-	        .fromFilePairs( params.fastq )
-        	.ifEmpty { error "Can't find any reads matching : ${ params.fastq }" }
-	        .set { fastq_input }
-	log.info "Set input channel for assembly".center(60)
-}
-
-
-
-
-if (params.assemble == 'enable') {
 
 process assembly {
 
 	maxForks 2
 
 	publishDir 'results/assemblies/', pattern: "*.fa"
-
-	//when:
-        //params.assemble == 'enable'	
 
 	input:
 	set sample_id, file( fastq_pair ) from fastq_input
@@ -63,20 +45,28 @@ process assembly {
 		
 	
 }
-}
 // add quality control step only use assemblies with less than a desired threshold default 85
-min_contigs = params.contigs
+
+if (params.contigs == 'none' ){
+	min_contigs = 0
+}
+else {
+	min_contigs = params.contigs
+}
 contig_size = params.contig_size
-log.info "QC of assemblies excluding isolates with greater than $min_contigs"
+
+log.info "QC of assemblies excluding isolates with greater than $min_contigs contigs"
+log.info "QC of assemblies excluding contigs with less than $contig_size bp"
+
 process assemblyqc {
-	publishDir 'results/assemblies_qc/', pattern: "*.fa"
+	publishDir 'results/assemblies_qc/', pattern: "*QCd.fa"
 	
 	
 	input:
 	set sample_id, file(assembly) from qc_input
 
 	output:
-	set sample_id, "${sample_id}.fa" into qc_output
+	set sample_id, "${sample_id}.QCd.fa" optional true into qc_output
 
 
 	script:
@@ -95,8 +85,8 @@ process chewie {
 
         
         output:
-        set sample_id, "${sample_id}_*_results_alleles.tsv" into chewie_alleles_out
-        set sample_id, "${sample_id}_*_results_statistics.tsv" into chewie_statistics_out
+        set sample_id, "${sample_id}_*_results_alleles.tsv" optional true into chewie_alleles_out
+        set sample_id, "${sample_id}_*_results_statistics.tsv" optional true into chewie_statistics_out
 
 	workflow.onComplete {
                          println "chewBBACA completed at: $workflow.complete"
@@ -109,12 +99,13 @@ process chewie {
         fi
         
         cp -r ${workflow.projectDir}/${params.schemaPath} .
-
-        mv ${sample_id}.fa genomes/
-        chewBBACA.py AlleleCall -i ./genomes/ -g ${params.schemaPath} -o chewie_results/ --cpu 16 --fc
-        cp chewie_results/*/results_alleles.tsv ${sample_id}_${params.assembler}_results_alleles.tsv
-        cp chewie_results/*/results_statistics.tsv ${sample_id}_${params.assembler}_results_statistics.tsv
-        
+	
+	if [ -f ${sample_id}.QCd.fa ]; then
+	        mv ${sample_id}.QCd.fa genomes/
+        	chewBBACA.py AlleleCall -i ./genomes/ -g ${params.schemaPath} -o chewie_results/ --cpu 16 --fc
+        	cp chewie_results/*/results_alleles.tsv ${sample_id}_${params.assembler}_results_alleles.tsv
+        	cp chewie_results/*/results_statistics.tsv ${sample_id}_${params.assembler}_results_statistics.tsv
+        fi
         """ 
 }
 
