@@ -33,9 +33,8 @@ pip3 install snakemake
 
 *1. Get Coreugate*
 ```
-$ mkdir MyProjectDir
+$ git clone https://github.com/kristyhoran/Coreugate.git MyProjectDir
 $ cd MyProjectDir
-$ git clone https://github.com/kristyhoran/Coreugate.git
 ```
 *2. Setup*
 
