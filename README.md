@@ -49,14 +49,11 @@ Following step 1 and 2 you should have the following directory setup
 ```
 MyProjectDir/
 	|
-	|	Snakefile
-	|	config.yaml
-	|	bin/
-		|
-		|	qc.py
-		|	combine_results.py
-	|	
-	|	isolates.tab
+	|Snakefile
+	|config.yaml
+	|bin/
+	|schema_dir/	
+	|isolates.tab
 		
 ```
 
