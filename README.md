@@ -1,4 +1,4 @@
-# COREugate - A Nextflow pipeline for cgMLST
+# COREugate - A snakemake pipeline for cgMLST
 ## From reads to cgMLST profile.
 
 This is a simple pipeline that allows the user to input paired-end reads and will output a cgMLST profile for the isolates as well as statistics for allele calling.
@@ -7,61 +7,75 @@ This is a simple pipeline that allows the user to input paired-end reads and wil
 2. Call alleles using [chewBBACA](https://github.com/B-UMMI/chewBBACA/wiki).
 3. Combine profiles and statisitics for the whole dataset.
 ### Get a cgMLST scheme
+Download a cgMLST scheme from a public repository or use [Coreuscan](https://github.com/kristyhoran/coreuscan).
 
-Download a cgMLST scheme from a public repository or use [Coreuscan](https://github.com/kristyhoran/coreuscan) and use chewBBACA to prepare the scheme for allele calling (you may need to install chewBBACA)
+### Dependencies
+```
+Python <3.6
+Biopython
+Snakemake
+```
+
+### Biopython
+Biopython is used here for quality control of assemblies, information about biopython can be found [here](https://biopython.org)
+```
+pip3 install biopython
+```
+
+### Snakemake
+Ensure that you have Snakemake installed. Detailed instructions can be found [here](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
 
 ```
-chewBBACA.py PrepExternalSchema -i pathFolderSchemaFastaFiles/
+pip3 install snakemake
 ```
-where pathFolderSchemaFastaFiles/ is the path to downloaded scheme.
-
-### Nextflow
-Ensure that you have Nextflow installed. Detailed instructions can be found [here](https://www.nextflow.io/docs/latest/getstarted.html)
 
 ### Run Coreugate
-Once you have a scheme and have installed Nextflow you can run Coreugate
 
+*1. Get Coreugate*
 ```
-REQUIRED
+$ mkdir MyProjectDir
+$ cd MyProjectDir
+$ git clone https://github.com/kristyhoran/Coreugate.git
+```
+*2. Setup*
+Input to Coreugate is a tab-delimited file (default name isolates.tab).
+```
+isolate_name	path/to/reads/R1.fq.gz	path/to/reads/R2.fq.gz
+```
+*3. Run Coreugate*
+Basic
+```
+snakemake --config schemaPath=path/to/Schema --use-singularity
+```
+If you do not wish to use singualrity containers to run assembly and chewBBACA - proceed at own risk! and ensure that you have one of shovill, skesa or spades 3.7 and chewBBACA > 2.0.12 installed.
 
-	--fastq	path to reads in the form of path/to/reads/*{1,2},
-		where * is a sample name or identifier (note that this will be the identifier that is carried throughout the pipeline for that sample
-
-	--schemaPath path/to/downloaded/scheme
-
-OPTIONAL
-	--assembler can choose: skesa, shovill (implementing latest Spades version), Spadesv0.3.7: default shovill 
-		IMPORTANT: if you wish to use Spades v0.3.7, add `-profile spades` to the end of the command
-	--contigs set the minimum contig size to discard assemblies with less than a set threshold: default no minumimun
-	--contig_size the minimum contig size kept for analysis: default 200 bp
-
+Customised - run Coreugate, assembling with skesa and only using samples with > 85 contigs for input into chewBBACA
+```
+snakemake --config schemaPath=path/to/Schema assembler=skesa min_contigs=85 --use-singularity
 ```
 
-#### Example
+Other parameters that can be user-defined are
+```
+min_contig_size default=500
+prepCPU default=36
+chewieCPU default=36
+isolate_file default=isolates.tab
+```
 
-```
-nextflow run kristyhoran/Coreugate --fastq 'data/*_{1,2}*' --schemaPath 'schemaPath/' --contigs 85
-```
 
 ### Things to note
-* It is improtant to wrap the pipeline arguments in single quotes, unless they are supposed to be passed as a number as seen above for `--contigs 85`. Nextflow arguments can also be included, these do not need to be wrapped in quotes. An example of this can be seen above, when adding `-profile spades` to the command. `spades` does not need to be in quotes.
-
-* If you interrupt the pipeline or want to go back and add isolates later on the flag `-resume` may be addedd to the end of the command, providing you run it from within the original folder.
-
-* When setting up the file structure for a project, it is advisable to have reads named with the a meaningful name for later analysis, the sample name is used throughout to identify the samples at different steps.
-
-* Output of each step will be stored in a folder created by the pipeline called `results`.
-
-* The `work` folder will contain the singularity containers used in the pipeline and temporary files that may be used to troubleshoot if something fails, it may be removed at the completion of the pipeline if you desire.
+* chewBBACA will update your schema with newly identified alleles for loci. Because of this chewBBACA currently can not be run in parallel as such COREugate limits the chewBBACA step to run consecutively
+* If you interrupt the pipeline or want to go back and add isolates simply add new isolates to the end of the isolates.tab file
+* Output of each step will be stored in a folder created by the pipeline called `coreugate`.
 
 ### Limitations of the pipeline
-* At this stage, Coreugate is only able to take reads as input, not assemblies.
+* At this stage, COREugate only supports reads as input. Future plans include being able to use a mix of reads and assemblies.
 * Coreugate is only able to work with pre-exisiting schemas that have been prep as described above, to derive profiles for isolates.
 * Possibly more, I just haven't found them yet!!
 
 ### Features to come
 * Optionally use reads and/or assemblies
-* Download and prep schemas in pipeline
+* Download schemas
 * Call alleles without a pre-existing schema
 
 * Will take requests!

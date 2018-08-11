@@ -1,0 +1,14 @@
+isolate_file:
+  isolates.tab
+assembler:
+  shovill
+min_contig_size:
+  500
+min_contigs:
+  0
+prepCPU:
+  36
+chewieCPU:
+  36
+schemaPath:
+  ' '
