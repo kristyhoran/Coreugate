@@ -3,8 +3,8 @@
 
 This is a simple pipeline that allows the user to input paired-end reads and will output a cgMLST profile for the isolates as well as statistics for allele calling.
 
-1. Assemble - default using Shovill (implementing the latest version of Spades)
-2. Call alleles using [chewBBACA](https://github.com/B-UMMI/chewBBACA/wiki).
+1. Assemble - default using [Shovill](https://github.com/tseemann/shovill) (implementing the latest version of Spades)
+2. PrepSchema (if necessary) and Call alleles using [chewBBACA](https://github.com/B-UMMI/chewBBACA/wiki).
 3. Combine profiles and statisitics for the whole dataset.
 ### Get a cgMLST scheme
 Download a cgMLST scheme from a public repository or use [Coreuscan](https://github.com/kristyhoran/coreuscan).
@@ -38,11 +38,29 @@ $ cd MyProjectDir
 $ git clone https://github.com/kristyhoran/Coreugate.git
 ```
 *2. Setup*
+
 Input to Coreugate is a tab-delimited file (default name isolates.tab).
 ```
 isolate_name	path/to/reads/R1.fq.gz	path/to/reads/R2.fq.gz
 ```
-*3. Run Coreugate*
+*3. Recommended directory structure*
+
+Following step 1 and 2 you should have the following directory setup
+```
+MyProjectDir/
+	|
+	|	Snakefile
+	|	config.yaml
+	|	bin/
+		|
+		|	qc.py
+		|	combine_results.py
+	|	
+	|	isolates.tab
+		
+```
+
+*4. Run Coreugate*
 Basic
 ```
 snakemake --config schemaPath=path/to/Schema --use-singularity
