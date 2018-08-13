@@ -6,8 +6,8 @@ HEADER = 'COREugate v ' + str(VERSION)
 print(HEADER.center(80, '='))
 print('A snakemake workflow for cgMLST'.center(80))
 print('type `snakemake help` or https://github.com/kristyhoran/Coreugate'.center(80))
-print('All issues can be filed at https://github.com/kristyhoran/Coreugate')
-print('Good luck! May the force be with you.')
+print('All issues can be filed at https://github.com/kristyhoran/Coreugate'.center(80))
+print('Good luck! May the force be with you.'.center(80))
 
 # set path to config file
 configfile:'config.yaml'
@@ -135,6 +135,10 @@ rule chewBBACA:
         """
             if [ ! -d {SCHEMA_PATH}/short ]; then
                 chewBBACA.py PrepExternalSchema -i {input.schema}/ -cpu {prepCPU} -v
+            fi
+
+            if [ -d {SCHEMA_PATH}/temp ]; then
+                rm -r {SCHEMA_PATH}/temp
             fi
 
             rm -rf {SCHEMA_PATH}/temp
