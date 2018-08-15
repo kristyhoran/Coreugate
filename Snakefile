@@ -134,7 +134,7 @@ rule chewBBACA:
     shell:
         """
             if [ ! -d {SCHEMA_PATH}/short ]; then
-                chewBBACA.py PrepExternalSchema -i {input.schema}/ -cpu {prepCPU} -v
+                chewBBACA.py PrepExternalSchema -i {input.schema}/ --cpu {prepCPU} -v
             fi
 
             if [ -d {SCHEMA_PATH}/temp ]; then
