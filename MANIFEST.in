@@ -1,0 +1,3 @@
+include test/*
+include templates/*
+include scripts/*

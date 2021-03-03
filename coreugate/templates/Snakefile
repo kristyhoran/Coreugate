@@ -1,0 +1,125 @@
+# set path to config file
+configfile:'config.yaml'
+# set the working directory to the job_id from config file
+# def get_samples(data_type):
+    
+# configs variables
+# path to schema
+schema_path = config['schema_path']
+data_type = config['data_type']
+# CPU
+chewieCPU = config['chewieCPU']
+
+INPUT_FILE = config['input_file']
+SAMPLES = config['isolates'].split()
+
+# generate the output folder and symlinks to reads
+
+rule all: #
+    input:
+        # expand("CONTIGS/{sample}/{sample}.fa", sample = SAMPLES),
+        expand("{sample}/results_statistics.tsv", sample = SAMPLES), 
+        expand("{sample}/results_alleles.tsv", sample = SAMPLES),
+        'overall_statistics.tsv', 'overall_alleles.tsv', 'distances.tab',
+
+if data_type == "READS":
+    rule assemble:
+        input: 
+            r1 = 'READS/{sample}/R1.fq.gz',
+            r2 = 'READS/{sample}/R.fq.gz'
+        output:
+            'CONTIGS/{sample}/contigs.fa'
+        params:
+            assembler = config['assembler']
+        shell:
+            """
+            if [ "{params.assembler}" == "shovill-spades" ]; then
+                shovill --outdir temp --R1 {input.r1} --R2 {input.r2} --force --minlen 200
+                cp temp/contigs.fa {output}
+                rm -r temp
+            elif [ "{params.assembler}" == "shovill-skesa" ]; then
+                shovill --outdir temp --R1 {input.r1} --R2 {input.r2} --force --minlen 200 --assembler skesa 
+                cp temp/contigs.fa {output}
+                rm -r temp
+            elif [ "{params.assembler}" == "skesa" ]; then
+                skesa --fastq {input.r1},{input.r2} --vector_percent 1 --use_paired_ends --cores 4 > {output}
+            elif [ "{params.assembler}" == "spades" ]; then
+                spades.py -o temp/ -1 {input.r1} -2 {input.r2}
+                cp temp/contigs.fasta {output}
+                rm -r temp
+            fi
+            """
+
+
+rule chewBBACA:
+    """
+    Perform AlleleCall
+    schemaPath=str COMPULSORY path the folder containing cgMLST schema
+    prepCPU=int option: cpus used for PrepExternalSchema (default: 36)
+    chewieCPU=int option: cpus used for AlleleCall (default: 36)
+    """
+    input:
+        isolate ="CONTIGS/{sample}/contigs.fa",
+        
+    output:
+        "{sample}/results_statistics.tsv", "{sample}/results_alleles.tsv"
+    message:
+        'Running chewBBACA, please be patient'
+    resources:
+        wget_limit=1
+    singularity:
+        "shub://phgenomics-singularity/chewbbaca_singularity"
+    params:
+        ptf = config['ptf'],
+        schema = schema_path,
+        chewieCPU = config['chewieCPU']
+    # log: "coreugate.log"
+    shell:
+       	"""
+        chewBBACA.py AlleleCall -i {input.isolate} -g {params.schema} -o chew_temp/ --cpu {chewieCPU} --fc {params.ptf} 
+        mv chew_temp/*/* {wildcards.sample}/
+        sed -i 's/contigs\.fa/{wildcards.sample}/g' {wildcards.sample}/results_alleles.tsv
+        sed -i 's/contigs\.fa/{wildcards.sample}/g' {wildcards.sample}/results_statistics.tsv 
+        rm -r chew_temp
+        """
+
+rule get_isolates:
+    input: 
+        INPUT_FILE
+    output:
+        "isolates.txt"
+    shell:
+        """
+        cut -f1 {input} > {output}
+        """
+
+rule combinechewie:
+    """
+    No need anything here!
+    """
+    input:
+        'isolates.txt'
+    output:
+        'overall_statistics.tsv', 'overall_alleles.tsv'
+    message:
+        'Combining chewBBACA results.'
+    # log: "coreugate.log"
+    params:
+        script_path= config['script_path']
+    shell:
+        """
+        python3 {params.script_path}/combine_chewie.py {input}
+        """
+        
+rule pairwise_dist:
+    input:
+        'overall_alleles.tsv'
+    output:
+        'distances.tab'
+    params:
+        script_path = config['script_path']
+    shell:
+        """
+        Rscript {params.script_path}/distances.R
+        """
+

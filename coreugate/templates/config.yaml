@@ -1,0 +1,22 @@
+isolates:
+  {{isolates}}
+min_contig_size:
+  {{min_contig_size}}
+min_contigs:
+  {{min_contigs}}
+chewieCPU:
+  {{cpu}}
+schema_path:
+  {{schema_path}}
+data_type:
+  {{data_type}}
+assembler:
+  {{assembler}}
+workdir:
+  {{workdir}}
+script_path:
+  {{script_path}}
+ptf:
+  {{ptf}}
+input_file:
+  {{input_file}}
