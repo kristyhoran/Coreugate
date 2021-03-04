@@ -10,7 +10,7 @@ import itertools
 import subprocess
 import pathlib
 import re
-from Bio import SeqIO, Phylo
+# from Bio import SeqIO, Phylo
 from packaging.version import Version
 
 
@@ -36,9 +36,8 @@ class RunCoreugate:
         if args.input_file == '':
             self.logger.warning(f"input_file can not be empty. Please check your inputs and try again.") 
             raise SystemExit
-        else:
-            self.input_file = self._check_file(args.input_file) 
-        self.input_type = self._input_type()
+        elif args.input_file != '':
+            self.input_file = self._check_file(args.input_file)
         if args.schema_path == '':
             self.logger.warning(f"schema_path can not be empty. Please check your inputs and try again.") 
             raise SystemExit
@@ -46,12 +45,12 @@ class RunCoreugate:
             self.schema_path = self._check_file(args.schema_path) 
         self.min_contig_size = args.min_contig_size
         self.min_contigs = args.min_contigs
-        self.assembler = args.assembler
+        # self.assembler = args.assembler
         self.prodigal_training = args.prodigal_training
-        self.run_with_singularity = args.singularity
-        self.singularity_path = args.singularity_path
+        # self.run_with_singularity = args.singularity
+        # self.singularity_path = args.singularity_path
         self.workdir = self._check_file(args.workdir)
-        self.resources = args.resources
+        # self.resources = args.resources
         self.threads = args.threads
 
     def _check_file(self, path):
@@ -62,26 +61,26 @@ class RunCoreugate:
         if path == '':
             self.logger.warning(f"{path} can not be empty. Please check your inputs and try again.")
             raise SystemExit
-        elif pathlib.Path(path).exists():
+        elif pathlib.Path(path).exists() and os.access(path, os.R_OK):
             return pathlib.Path(path)
         else:
-            self.logger.warning(f"{path} can not be found. Please check your inputs and try again.")
+            self.logger.warning(f"{path} can not be found or is not accessible. Please check your inputs and try again.")
             raise SystemExit
 
-    def _input_type(self):
-        """
-        check the dimensions of the input file, if == 2 then inputs is contigs, if == 3 the reads
-        """
-        tab = pandas.read_csv(self.input_file, sep = '\t')
-        if tab.shape[1] == 2:
-            self.logger.info(f"You are running COREugate with from assemblies.")
-            return "CONTIGS"
-        elif tab.shape[1] == 3:
-            self.logger.info(f"You are running COREugate with from reads.")
-            return "READS"
-        else:
-            self.logger.warning(f"Sorry but your input file is incorrectly foramtted, delimiter should be a tab and it should contain only 2 or 3 columns (contigs or reads respoectively). Please check and try again.")
-            raise SystemExit
+    # def _input_type(self):
+    #     """
+    #     check the dimensions of the input file, if == 2 then inputs is contigs, if == 3 the reads
+    #     """
+    #     tab = pandas.read_csv(self.input_file, sep = '\t')
+    #     if tab.shape[1] == 2:
+    #         self.logger.info(f"You are running coreugate with from assemblies.")
+    #         return "CONTIGS"
+    #     elif tab.shape[1] == 3:
+    #         self.logger.info(f"You are running coreugate with from reads.")
+    #         return "READS"
+    #     else:
+    #         self.logger.warning(f"Sorry but your input file is incorrectly foramtted, delimiter should be a tab and it should contain only 2 or 3 columns (contigs or reads respoectively). Please check and try again.")
+    #         raise SystemExit
 
     def check_version(self, software):
         '''
@@ -119,34 +118,35 @@ class RunCoreugate:
             if Version(chewie_version) >= base_version:
                 self.logger.info(f"chewBBACA version {chewie_version} has been found.")
             else:
-                self.logger.warning(f"chewBACCA {chewie_version} has been found. This is not compatible with COREugate, please install chewBBACA version >= 2.0.16 before proceeding (https://github.com/B-UMMI/chewBBACA). Or use `-s Y`. Exiting....")
+                self.logger.warning(f"chewBACCA {chewie_version} has been found. This is not compatible with coreugate, please install chewBBACA version >= 2.0.16 before proceeding (https://github.com/B-UMMI/chewBBACA). Or use `-s Y`. Exiting....")
                 raise SystemExit
         except FileNotFoundError:
-            self.logger.warning(f"chewBBACA is not installed. please install chewBBACA <= version 2.0.16 before proceeding (https://github.com/B-UMMI/chewBBACA). Or use `-s Y`. Exiting....")
+            self.logger.warning(f"chewBBACA is not installed. please install chewBBACA <= version 2.0.16 before proceeding (https://github.com/B-UMMI/chewBBACA). Exiting....")
             raise SystemExit
     
 
         
-    def check_assemblers(self):
-        '''
-        check assemblers
-        '''
-        self.logger.info(f'Checking that {self.assembler} is installed.')
-        tocheck = 'shovill' if 'shovill' in self.assembler else self.assembler
-        asmb_version = self.check_version(tocheck)
+    # def check_assemblers(self):
+    #     '''
+    #     check assemblers
+    #     '''
+    #     self.logger.info(f'Checking that {self.assembler} is installed.')
+    #     tocheck = 'shovill' if 'shovill' in self.assembler else self.assembler
+    #     asmb_version = self.check_version(tocheck)
         
     def run_checks(self):
         
-        if self.run_with_singularity:
-            self.logger.info(f"You are using singularity containers. Good luck")           
-        else:
-            self.check_chewbbaca()
+        self.check_chewbbaca()
+        # self.check_assemblers()
+
+    def check_input_file(self, tab):
         
-        if not self.run_with_singularity and self.input_type == 'READS':
-            self.check_assemblers()
-
-
-    def link_inputs(self, data_source, isolate_id, data_name):
+        if tab.shape[1] != 2:
+            self.logger.critical(f"Your input file is not in the correct format. The input file should be a tab-delimited file, column 1 is isolate ID and column 2 is path to contigs, with no header line. Exiting....")
+            raise SystemExit
+        return True
+        
+    def link_inputs(self, data_source, isolate_id):
         '''
         check if read source exists if so check if target exists - if not create isolate dir and link. If already exists report that a dupilcation may have occured in input and procedd
 
@@ -154,18 +154,18 @@ class RunCoreugate:
         # check that job directory exists
         # logger.info(f"Checking that reads are present.")
         
-        R = self.workdir / f"{self.input_type}"
+        R = self.workdir / f"CONTIGS"
         if not R.exists():
             R.mkdir()
         
         # if f"{read_source}"[0] != '/':
         #     read_source = self.workdir / read_source
         
-        if data_source.exists():
-            I = R / f"{isolate_id}" # the directory where reads will be stored for the isolate
+        if data_source.exists() and os.access(data_source, os.R_OK):
+            I = R / f"{isolate_id}" # the directory where contigs will be stored for the isolate
             if not I.exists():
                 I.mkdir()
-            data_target = I / f"{data_name}"
+            data_target = R / I / f"{isolate_id}.fa"
             if not data_target.exists():
                 subprocess.run(f"cp {data_source} {data_target}", shell = True)
                 # data_target.symlink_to(data_source)
@@ -181,17 +181,17 @@ class RunCoreugate:
             :tab: dataframe of the input file
         '''
         self.logger.info(f"Checking that all the data files exist.")
-        pos_1 = 'R1.fq.gz' if self.input_type == 'READS' else 'contigs.fa'
+        # pos_1 = 'R1.fq.gz' if self.input_type == 'READS' else 'contigs.fa'
         for i in tab.iterrows():
             # print(i[1][0])
             if not '#' in i[1][0]:
-                r1 = i[1][1]
-                self._check_file(r1)
-                self.link_inputs(pathlib.Path(r1), isolate_id=f"{i[1][0].strip()}", data_name=pos_1)
-                if self.input_type == 'READS':
-                    r2 = i[1][2]
-                    self._check_file(pathlib.Path(r2))
-                    self.link_reads(pathlib.Path(r2), isolate_id=f"{i[1][0].strip()}", data_name='R2.fq.gz')
+                c = i[1][1]
+                self._check_file(c)
+                self.link_inputs(pathlib.Path(c), isolate_id=f"{i[1][0].strip()}")
+                # if self.input_type == 'READS':
+                #     r2 = i[1][2]
+                #     self._check_file(pathlib.Path(r2))
+                #     self.link_reads(pathlib.Path(r2), isolate_id=f"{i[1][0].strip()}", data_name='R2.fq.gz')
         return True
 
     
@@ -250,6 +250,7 @@ class RunCoreugate:
         # link input data to input directory
         self.logger.info(f"Linking source data to working directory")
         tab = pandas.read_csv(self.input_file, sep = '\t', header = None)
+        self.check_input_file(tab = tab)
         # print(tab)
         self.check_inputs_exists(tab = tab)
         self.isolates = ' '.join(list(tab.iloc[ : , 0]))
@@ -279,7 +280,7 @@ class RunCoreugate:
     def setup_pipeline(self):
         
         self.setup_working_directory()
-        self.write_workflow()
+        # self.write_workflow()
 
     def run_workflow(self):
         '''
@@ -317,5 +318,5 @@ class RunCoreugate:
 
         self.run_checks()
         self.setup_pipeline()
-        self.run_workflow()
-        self.finish_workflow()
+        # self.run_workflow()
+        # self.finish_workflow()

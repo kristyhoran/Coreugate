@@ -2,12 +2,13 @@
 
 import logging
 import argparse
-import configargparse
+import argparse
 import pathlib
 import sys
 
-from Coreugate import RunCoreugate
+from coreugate import RunCoreugate
 
+VERSION = '2.0.0'
 
 def run_pipeline(args):
     '''
@@ -19,61 +20,45 @@ def run_pipeline(args):
 def set_parsers():
     # setup the parser
   
-    parser = configargparse.ArgumentParser(description='Coreugate - a cgMLST pipeline implementing chewBACCA',formatter_class=configargparse.ArgumentDefaultsHelpFormatter)
-    # use add_argument
+    parser = argparse.ArgumentParser(description='Coreugate - a cgMLST pipeline implementing chewBACCA',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + VERSION)
     parser.add_argument('--input_file',
         '-i', 
-        help='Input file tab-delimited file 2 or 3 columns isolate_id path_to_input_file(s)',
+        help='Input file tab-delimited file3 columns isolate_id path_to_input_file (contigs)',
         default = '')
     parser.add_argument('--schema_path',
-        '-sp',
-        help='Path to species schema/allele db',
+        '-s',
+        help='Path to species schema/allele db (or url if using chewie Nomenclature server)',
         default = '')
     parser.add_argument('--min_contig_size', 
-        '-c', 
+        '-mcs', 
         help='Minumum contig size required for QC', 
         default=500)
     parser.add_argument('--min_contigs', 
-        '-m', 
+        '-mc', 
         help='Minumum number of contigs required for QC', 
         default=0)
-    parser.add_argument('--assembler', 
-        '-a', 
-        help='Assembler to be used (options are: shovill-spades, shovil-skesa, shovill-velvet, skesa, spades)', 
-        default= 'shovill-spades')
+    # parser.add_argument('--assemble',
+    #     '-asm',
+    #     action = "store_true", help='If you have supplied reads as an input and need to assemble.')
+    # parser.add_argument('--assembler', 
+    #     '-a', 
+    #     help='Assembler to be used (options are: shovill-spades, shovil-skesa, skesa, spades)', 
+    #     default= 'shovill-spades')
     parser.add_argument('--prodigal_training', 
         '-p', 
         help='Prodigal file to be used in allele calling. See https://github.com/B-UMMI/chewBBACA/tree/master/CHEWBBACA/prodigal_training_files for options', 
         default= '')
     parser.add_argument(
-        "--singularity",
-        "-S",
-        action="store_true",
-        help="If using singularity container for chewBACCA"
-    )
-    parser.add_argument(
-        "--singularity_path",
-        "-s",
-        default="",
-        help="Path to the singularity container for chewBACCA"
-    )
-    parser.add_argument(
         "--workdir",
         "-w",
         default=f"{pathlib.Path.cwd().absolute()}",
         help="Working directory, default is current directory",
-    )
-    parser.add_argument(
-        "--resources",
-        "-r",
-        default=f"{pathlib.Path(__file__).parent }",
-        help="Directory where templates are stored",
-    )
-    
+    )   
     parser.add_argument('--threads',
         '-t',
         help='Number of threads to run chewBACCA', 
-        default=1
+        default=16
     )
     
     parser.set_defaults(func=run_pipeline)
@@ -82,7 +67,7 @@ def set_parsers():
     if vars(args) == {}:
         parser.print_help(sys.stderr)
     else:
-        
+        print(args)
         args.func(args)
 	
 
