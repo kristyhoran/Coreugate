@@ -30,14 +30,14 @@ def set_parsers():
         '-s',
         help='Path to species schema/allele db (or url if using chewie Nomenclature server)',
         default = '')
-    parser.add_argument('--min_contig_size', 
-        '-mcs', 
-        help='Minumum contig size required for QC', 
-        default=500)
-    parser.add_argument('--min_contigs', 
-        '-mc', 
-        help='Minumum number of contigs required for QC', 
-        default=0)
+    # parser.add_argument('--min_contig_size', 
+    #     '-mcs', 
+    #     help='Minumum contig size required for QC', 
+    #     default=500)
+    # parser.add_argument('--min_contigs', 
+    #     '-mc', 
+    #     help='Minumum number of contigs required for QC', 
+    #     default=0)
     # parser.add_argument('--assemble',
     #     '-asm',
     #     action = "store_true", help='If you have supplied reads as an input and need to assemble.')
@@ -60,7 +60,28 @@ def set_parsers():
         help='Number of threads to run chewBACCA', 
         default=16
     )
-    
+    parser.add_argument(
+        '--filter_samples_threshold',
+        '-ft',
+        default= 0.95,
+        help = f"The proportion of loci present in a sample for an sample to be included in further analysis (0-1)"
+        )
+    parser.add_argument(
+        '--cluster',
+        '-c',
+        action = "store_true", help='If you would like to cluster the pairwise distance matrix. If selected you must provide a list of thresholds.' 
+    )
+    parser.add_argument(
+        '--cluster_thresholds',
+        '-ct',
+        default='',
+        help="Provide a comma separate list (NO SPACES) eg 20,40,200"
+    )
+    parser.add_argument(
+        '--force',
+        '-f',
+        action = "store_true", help='If you want to force chewBBACA to re-run.'
+        )
     parser.set_defaults(func=run_pipeline)
     args = parser.parse_args()
     

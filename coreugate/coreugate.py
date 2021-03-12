@@ -43,8 +43,8 @@ class RunCoreugate:
             raise SystemExit
         else:
             self.schema_path = self._check_file(args.schema_path) 
-        self.min_contig_size = args.min_contig_size
-        self.min_contigs = args.min_contigs
+        # self.min_contig_size = args.min_contig_size
+        # self.min_contigs = args.min_contigs
         # self.assembler = args.assembler
         self.prodigal_training = args.prodigal_training
         # self.run_with_singularity = args.singularity
@@ -52,6 +52,43 @@ class RunCoreugate:
         self.workdir = self._check_file(args.workdir)
         # self.resources = args.resources
         self.threads = args.threads
+        self.force = args.force
+        self.cluster = args.cluster
+        if self.cluster:
+            # check that thresholds are applied
+            self.cluster_thresholds = self.check_cluster_thresholds(args.cluster_thresholds)
+        else: 
+            self.cluster_thresholds = args.cluster_thresholds
+        self.filter_threshold = self.check_filter_threshold(args.filter_threshold)
+    
+    def check_filter_threshold(self, threshold):
+        try:
+            t = float(threshold)
+            if 0 <= t <=1.0:
+                return t
+            else: 
+                self.logger.critical(f"Proportion must be between 0 and 1. Please try again.")
+        except ValueError:
+                self.logger.critical(f"There seems to be a problem with your proortion. Please try again.")
+                raise SystemExit
+
+    def check_cluster_thresholds(self, thresholds):
+        if thresholds.split(',') == '':
+            self.logger.critical(f"If you wish to cluster the pairwise allelic distance matrix you will need to supply at least on threshold.")
+            raise SystemExit
+        else:
+            
+            for t in thresholds.split(','):
+                try:
+                    isinstance(int(t), int)
+                    return thresholds
+                except ValueError:
+                    self.logger.critical(f"There seems to be a problem with your thresholds. Please try again.")
+                    raise SystemExit
+                except TypeError:
+                    self.logger.critical(f"There seems to be a problem with your thresholds. Please try again.")
+                    raise SystemExit
+            
 
     def _check_file(self, path):
         '''
@@ -265,11 +302,11 @@ class RunCoreugate:
             ptf_string = ''
         self.logger.info(f"Setting up specific workflow")        
         # read the config file which is written with jinja2 placeholders (like django template language)
-        template_dir = f"{pathlib.Path(self.resources, 'templates')}"
-        config_template = jinja2.Template(pathlib.Path(template_dir, 'config.yaml').read_text())
+        template_dir = f"{pathlib.Path(__file__).parent / 'utils'}"
+        config_template = jinja2.Template(pathlib.Path(template_dir, 'config.j2.yaml').read_text())
         config = self.workdir /'config.yaml'
         
-        config.write_text(config_template.render(isolates = self.isolates, data_type = self.input_type, min_contig_size = self.min_contig_size, min_contigs = self.min_contigs,cpu=self.threads, schema_path = self.schema_path,workdir = self.workdir, ptf = ptf_string, assembler = self.assembler, script_path = template_dir, input_file = f"{self.input_file}"))
+        config.write_text(config_template.render(force = self.force, filter_threshold = self.filter_threshold,cluster_threshold = self.cluster_thresholds,chewie_threads=self.threads, schema_path = self.schema_path,ptf = ptf_string))
         self.logger.info(f'this is the schema path : {self.schema_path}')
         self.logger.info(f"Config file successfully created")
         # template_dir = f"{pathlib.Path(self.resources, 'templates')}"

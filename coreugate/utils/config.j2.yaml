@@ -1,0 +1,11 @@
+params {
+
+    schema_path = file('{{ schema_path }}')
+    ptf = file('{{ ptf }}')
+    threads = {{ chewie_threads }}
+    force = {{ force }} 
+    profile_pass = {{ filter_threshold }}
+    cluster = {{ cluster }}
+    thresholds = '{{ cluster_threshold }}'
+
+}

@@ -13,11 +13,11 @@ def extract_unclustered(df, col, col1):
     return uc
 
 # get thresholds
-thresholds = []
-for i in sys.argv[2:]:
-    l = i.strip('[,]')
-    # print(l)
-    thresholds.append(l)
+thresholds = [sys.argv[2].split(',')]
+# for i in sys.argv[2:]:
+#     l = i.strip('[,]')
+#     # print(l)
+#     thresholds.append(l)
 # print(thresholds)
 
 
@@ -46,11 +46,12 @@ if pathlib.Path(tabfile).exists():
     # convery the lists to a numpy array
     X = numpy.array(mat)
     X = X.astype(numpy.float64)
-    # print(X)
+    print(X)
     for level in thresholds:
-        
-        clustering = AgglomerativeClustering(n_clusters = None, affinity = 'precomputed',linkage = 'single', distance_threshold =level).fit(X)
+        # print(int(level))
+        clustering = AgglomerativeClustering(n_clusters = None, affinity = 'precomputed',linkage = 'single', distance_threshold =int(level)).fit(X)
         df = pandas.DataFrame(data = {'ID': isos, f"Tx:{level}": clustering.labels_})
+        df[f"Tx:{level}"] = df[f"Tx:{level}"] + 1
         df = df.fillna('')
         df[f"Tx:{level}"] = df[f"Tx:{level}"].apply(lambda x: f"{x}")
         # df[lv[level]] = df[lv[level]].apply(lambda x: f'{lv[level]}_{x}')
