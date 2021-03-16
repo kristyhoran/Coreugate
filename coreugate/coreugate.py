@@ -60,6 +60,7 @@ class RunCoreugate:
         else: 
             self.cluster_thresholds = args.cluster_thresholds
         self.filter_threshold = self.check_filter_threshold(args.filter_samples_threshold)
+        self.report = args.report
         
     def check_prodigal(self, ptf):
 
@@ -343,14 +344,24 @@ class RunCoreugate:
         set the current directory to working dir for correct running of pipeline if singularity = Y then run with singularity
         if the pipeline wroks, return True else False
         '''
-        
-        cmd = f"nextflow {pathlib.Path(__file__).parent / 'utils' / 'main.nf'}"
+        resume = f"" if self.force else "-resume"
+        report = "-with-report coreugate_resource_report.html -with-trace"
+        extra_args = f"{resume} {report}"
+        cmd = f"nextflow {pathlib.Path(__file__).parent / 'utils' / 'main.nf'} {extra_args}"
         self.logger.info(f"Running {cmd} - patient you must be.")
-        # wkf = subprocess.run(cmd, shell = True)
-        # if wkf.returncode == 0:
-        #     return True
-        # else:
-        #     return False
+        wkf = subprocess.run(cmd, shell = True)
+        while True:
+            if wkf.stdout != None:
+                line = wkf.stdout.readline().strip()
+                if not line:
+                    break
+            line = ''
+            break
+            self.self.logger.info(f"{line}")
+        if wkf.returncode == 0:
+            return True
+        else:
+            return False
         
     def finish_workflow(self):
         '''

@@ -29,21 +29,7 @@ def set_parsers():
         '-s',
         help='Path to species schema/allele db (or url if using chewie Nomenclature server)',
         default = '')
-    # parser.add_argument('--min_contig_size', 
-    #     '-mcs', 
-    #     help='Minumum contig size required for QC', 
-    #     default=500)
-    # parser.add_argument('--min_contigs', 
-    #     '-mc', 
-    #     help='Minumum number of contigs required for QC', 
-    #     default=0)
-    # parser.add_argument('--assemble',
-    #     '-asm',
-    #     action = "store_true", help='If you have supplied reads as an input and need to assemble.')
-    # parser.add_argument('--assembler', 
-    #     '-a', 
-    #     help='Assembler to be used (options are: shovill-spades, shovil-skesa, skesa, spades)', 
-    #     default= 'shovill-spades')
+    
     parser.add_argument('--prodigal_training', 
         '-p', 
         help='Prodigal file to be used in allele calling. See https://github.com/B-UMMI/chewBBACA/tree/master/CHEWBBACA/prodigal_training_files for options', 
@@ -81,6 +67,11 @@ def set_parsers():
         '-f',
         action = "store_true", help='If you want to force chewBBACA to re-run.'
         )
+    parser.add_argument(
+        '--report',
+        help = "Save nextflow reports.",
+        action="store_true"
+    )
     parser.set_defaults(func=run_pipeline)
     args = parser.parse_args()
     

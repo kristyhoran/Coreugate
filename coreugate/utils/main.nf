@@ -14,7 +14,7 @@ contigs = Channel.fromPath('CONTIGS/*/*.fa')
 // println contigs.view()
 
 process PROFILES {
-    publishDir "$task.process", mode: 'copy'
+    publishDir "${task.process}/${sample_id}", mode: 'copy'
     maxForks 1
     cache 'lenient'
     cpus params.threads
@@ -37,7 +37,7 @@ process PROFILES {
 
 
 process COLLATE_STATS {
-    publishDir "$task.process", mode: 'copy'
+    publishDir "$launchDir", mode: 'copy'
 
     input:
         val(statistics)
@@ -52,7 +52,7 @@ process COLLATE_STATS {
 
 
 process COLLATE_ALLELES {
-    publishDir "$task.process", mode: 'copy'
+    publishDir "$launchDir", mode: 'copy'
 
     input:
         val(alleles)
@@ -66,7 +66,7 @@ process COLLATE_ALLELES {
 }
 
 process PAIRWISE_DISTANCE {
-    publishDir "$task.process", mode: 'copy'
+    publishDir "$launchDir", mode: 'copy'
 
     input:
         path overall_alleles
@@ -80,7 +80,7 @@ process PAIRWISE_DISTANCE {
 }
 
 process CLUSTER {
-    publishDir "$task.process", mode: 'copy'
+    publishDir "$launchDir", mode: 'copy'
 
     input:
         path pad
