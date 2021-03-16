@@ -2,11 +2,10 @@
 
 import logging
 import argparse
-import argparse
 import pathlib
 import sys
 
-from coreugate import RunCoreugate
+from coreugate.coreugate import RunCoreugate
 
 VERSION = '2.0.0'
 

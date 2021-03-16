@@ -46,7 +46,7 @@ class RunCoreugate:
         # self.min_contig_size = args.min_contig_size
         # self.min_contigs = args.min_contigs
         # self.assembler = args.assembler
-        self.prodigal_training = args.prodigal_training
+        self.prodigal_training = self.check_prodigal(args.prodigal_training)
         # self.run_with_singularity = args.singularity
         # self.singularity_path = args.singularity_path
         self.workdir = self._check_file(args.workdir)
@@ -59,8 +59,18 @@ class RunCoreugate:
             self.cluster_thresholds = self.check_cluster_thresholds(args.cluster_thresholds)
         else: 
             self.cluster_thresholds = args.cluster_thresholds
-        self.filter_threshold = self.check_filter_threshold(args.filter_threshold)
-    
+        self.filter_threshold = self.check_filter_threshold(args.filter_samples_threshold)
+        
+    def check_prodigal(self, ptf):
+
+        if ptf == '':
+            return ''
+        elif pathlib.Path(ptf).exists():
+            return pathlib.Path(ptf).absolute(  )
+        else:
+            self.logger.critical(f"There seems to be a problem with you prodigal training file. Please try again.")
+            raise SystemExit
+
     def check_filter_threshold(self, threshold):
         try:
             t = float(threshold)
@@ -77,18 +87,19 @@ class RunCoreugate:
             self.logger.critical(f"If you wish to cluster the pairwise allelic distance matrix you will need to supply at least on threshold.")
             raise SystemExit
         else:
-            
+            print(thresholds)
             for t in thresholds.split(','):
                 try:
                     isinstance(int(t), int)
-                    return thresholds
+                    
+                    
                 except ValueError:
                     self.logger.critical(f"There seems to be a problem with your thresholds. Please try again.")
                     raise SystemExit
                 except TypeError:
                     self.logger.critical(f"There seems to be a problem with your thresholds. Please try again.")
                     raise SystemExit
-            
+            return thresholds
 
     def _check_file(self, path):
         '''
@@ -296,17 +307,24 @@ class RunCoreugate:
         '''
         write the Snakefile and config.yaml
         '''
-        if self.prodigal_training != '':
-            ptf_string = f"--ptf {self.prodigal_training}"
-        else:
-            ptf_string = ''
-        self.logger.info(f"Setting up specific workflow")        
+        
+        self.logger.info(f"Setting up specific workflow")
+
+        cfg = {
+                'schema_path': f"{self.schema_path}",
+                'ptf':f"{self.prodigal_training}",
+                'chewie_threads': self.threads,
+                'force': 'false',
+                'filter_threshold': self.filter_threshold,
+                'cluster': f"{self.cluster}".lower(),
+                'cluster_threshold':self.cluster_thresholds
+        }        
         # read the config file which is written with jinja2 placeholders (like django template language)
         template_dir = f"{pathlib.Path(__file__).parent / 'utils'}"
         config_template = jinja2.Template(pathlib.Path(template_dir, 'config.j2.yaml').read_text())
-        config = self.workdir /'config.yaml'
+        config = self.workdir /'nextflow.config'
         
-        config.write_text(config_template.render(force = self.force, filter_threshold = self.filter_threshold,cluster_threshold = self.cluster_thresholds,chewie_threads=self.threads, schema_path = self.schema_path,ptf = ptf_string))
+        config.write_text(config_template.render(cfg))
         self.logger.info(f'this is the schema path : {self.schema_path}')
         self.logger.info(f"Config file successfully created")
         # template_dir = f"{pathlib.Path(self.resources, 'templates')}"
@@ -317,7 +335,7 @@ class RunCoreugate:
     def setup_pipeline(self):
         
         self.setup_working_directory()
-        # self.write_workflow()
+        self.write_workflow()
 
     def run_workflow(self):
         '''
@@ -326,16 +344,13 @@ class RunCoreugate:
         if the pipeline wroks, return True else False
         '''
         
-        if self.run_with_singularity:
-            cmd = f"snakemake -s {pathlib.Path(self.resources, 'templates', 'Snakefile')} --use-singularity --singularity-args '--bind /home' -d {self.workdir} -j 1"
-        else:
-            cmd = f"snakemake -s {pathlib.Path(self.resources, 'templates', 'Snakefile')} -d {self.workdir} -j 1"
+        cmd = f"nextflow {pathlib.Path(__file__).parent / 'utils' / 'main.nf'}"
         self.logger.info(f"Running {cmd} - patient you must be.")
-        wkf = subprocess.run(cmd, shell = True)
-        if wkf.returncode == 0:
-            return True
-        else:
-            return False
+        # wkf = subprocess.run(cmd, shell = True)
+        # if wkf.returncode == 0:
+        #     return True
+        # else:
+        #     return False
         
     def finish_workflow(self):
         '''
@@ -355,5 +370,5 @@ class RunCoreugate:
 
         self.run_checks()
         self.setup_pipeline()
-        # self.run_workflow()
+        self.run_workflow()
         # self.finish_workflow()

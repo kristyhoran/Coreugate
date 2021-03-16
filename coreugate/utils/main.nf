@@ -1,13 +1,13 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2   
 
-params.schema_path = file('/home/khhor/cgMLST/dev/vre_prepped')
-params.ptf = file('/home/khhor/cgMLST/dev/vre_prepped/Enterococcus_faecium.trn')
-params.threads = 16
-params.force = true
-params.profile_pass = 0.95
-params.cluster = true
-params.thresholds = [20,50]
+params.schema_path = file(params.schema_path)
+params.ptf = file(params.ptf)
+// params.threads = 36
+// params.force = true
+// params.profile_pass = 0.95
+// params.cluster = true
+// params.thresholds = [20,50]
 
 contigs = Channel.fromPath('CONTIGS/*/*.fa')
             .map { def file -> tuple(file.baseName, file)}
@@ -27,7 +27,7 @@ process PROFILES {
     script:
         """
         [ !  -f ptf.trn ] && ln -s ${params.ptf} ptf.trn
-        chewie AlleleCall -i . -g $params.schema_path --ptf ptf.trn -o ${sample_id}_profile --cpu $task.cpus --fr
+        chewie AlleleCall -i . -g $params.schema_path --ptf ${params.ptf} -o ${sample_id}_profile --cpu $task.cpus --fr
         cp ${sample_id}_profile/results_*/results_alleles.tsv ${sample_id}_results_alleles.tsv
         cp ${sample_id}_profile/results_*/results_statistics.tsv ${sample_id}_results_statistics.tsv
         rm -r ${sample_id}_profile

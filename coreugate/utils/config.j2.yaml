@@ -1,7 +1,7 @@
 params {
 
-    schema_path = file('{{ schema_path }}')
-    ptf = file('{{ ptf }}')
+    schema_path = '{{ schema_path }}'
+    ptf = '{{ ptf }}'
     threads = {{ chewie_threads }}
     force = {{ force }} 
     profile_pass = {{ filter_threshold }}
