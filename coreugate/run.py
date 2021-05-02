@@ -89,29 +89,6 @@ def main():
 
     args = set_parsers()
     
-    # if vars(args) == {}:
-    #     parser.print_help(sys.stderr)
-    # else:
-    # print(logging.__file__)
-    # logger = logging.getLogger(__name__)
-    # logger.setLevel(logging.INFO)
-    # # # create file handler which logs even debug messages
-    # # # create file handler which logs even debug messages
-    # fh = logging.FileHandler('coreugate.log')
-    # fh.setLevel(logging.INFO)
-    # # create console handler with a higher log level
-    # ch = logging.StreamHandler()
-    # ch.setLevel(logging.INFO)
-    # # create formatter and add it to the handlers
-    # formatter = logging.Formatter('[%(levelname)s:%(asctime)s] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-    # fh.setFormatter(formatter)
-    # ch.setFormatter(formatter)
-    # # add the handlers to the logger
-    # logger.addHandler(ch)
-    # logger.addHandler(fh)
-    # # logger.info(f"Ran Coreugate with : {' '.join(sys.argv)}")
-    # # args.func(args)
-
 
 if __name__ == "__main__":
     main()

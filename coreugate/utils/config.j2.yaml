@@ -1,5 +1,5 @@
 params {
-
+    input = '{{ input }}'
     schema_path = '{{ schema_path }}'
     ptf = '{{ ptf }}'
     threads = {{ chewie_threads }}

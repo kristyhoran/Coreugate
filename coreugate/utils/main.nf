@@ -9,8 +9,7 @@ params.ptf = file(params.ptf)
 // params.cluster = true
 // params.thresholds = [20,50]
 
-contigs = Channel.fromPath('CONTIGS/*/*.fa')
-            .map { def file -> tuple(file.baseName, file)}
+contigs = Channel.fromPath(params.input)
 // println contigs.view()
 
 process PROFILES {
@@ -19,17 +18,17 @@ process PROFILES {
     cache 'lenient'
     cpus params.threads
     input:
-        tuple val(sample_id), path(contig)
+        path(contigs)
     output:
-        tuple val(sample_id), path("*_results_alleles.tsv"), emit: alleles
-        tuple val(sample_id), path("*_results_statistics.tsv"), emit: statistics
+        path("results_alleles.tsv"), emit: alleles
+        path("results_statistics.tsv"), emit: statistics
 
     script:
         """
         [ !  -f ptf.trn ] && ln -s ${params.ptf} ptf.trn
-        chewie AlleleCall -i . -g $params.schema_path --ptf ${params.ptf} -o ${sample_id}_profile --cpu $task.cpus --fr
-        cp ${sample_id}_profile/results_*/results_alleles.tsv ${sample_id}_results_alleles.tsv
-        cp ${sample_id}_profile/results_*/results_statistics.tsv ${sample_id}_results_statistics.tsv
+        chewie AlleleCall -i $contigs -g $params.schema_path --ptf ${params.ptf} -o ${sample_id}_profile --cpu $task.cpus --fr
+        cp ${sample_id}_profile/results_*/results_alleles.tsv results_alleles.tsv
+        cp ${sample_id}_profile/results_*/results_statistics.tsv results_statistics.tsv
         rm -r ${sample_id}_profile
         """
 
@@ -45,7 +44,9 @@ process COLLATE_STATS {
         path('overall_statistics.txt'), emit: overall_statistics
         path('passed.txt'), emit:passed_profile
     script:
+        
         """
+        if $launchDir/overall_statistics.txt
         combine_statistics.py $task.process $params.profile_pass $statistics 
         """
 }

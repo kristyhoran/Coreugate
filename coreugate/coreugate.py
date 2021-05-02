@@ -43,14 +43,8 @@ class RunCoreugate:
             raise SystemExit
         else:
             self.schema_path = self._check_file(args.schema_path) 
-        # self.min_contig_size = args.min_contig_size
-        # self.min_contigs = args.min_contigs
-        # self.assembler = args.assembler
         self.prodigal_training = self.check_prodigal(args.prodigal_training)
-        # self.run_with_singularity = args.singularity
-        # self.singularity_path = args.singularity_path
         self.workdir = self._check_file(args.workdir)
-        # self.resources = args.resources
         self.threads = args.threads
         self.force = args.force
         self.cluster = args.cluster
@@ -116,21 +110,6 @@ class RunCoreugate:
             self.logger.warning(f"{path} can not be found or is not accessible. Please check your inputs and try again.")
             raise SystemExit
 
-    # def _input_type(self):
-    #     """
-    #     check the dimensions of the input file, if == 2 then inputs is contigs, if == 3 the reads
-    #     """
-    #     tab = pandas.read_csv(self.input_file, sep = '\t')
-    #     if tab.shape[1] == 2:
-    #         self.logger.info(f"You are running coreugate with from assemblies.")
-    #         return "CONTIGS"
-    #     elif tab.shape[1] == 3:
-    #         self.logger.info(f"You are running coreugate with from reads.")
-    #         return "READS"
-    #     else:
-    #         self.logger.warning(f"Sorry but your input file is incorrectly foramtted, delimiter should be a tab and it should contain only 2 or 3 columns (contigs or reads respoectively). Please check and try again.")
-    #         raise SystemExit
-
     def check_version(self, software):
         '''
         check version of software installed, if chewbbaca add string
@@ -174,15 +153,6 @@ class RunCoreugate:
             raise SystemExit
     
 
-        
-    # def check_assemblers(self):
-    #     '''
-    #     check assemblers
-    #     '''
-    #     self.logger.info(f'Checking that {self.assembler} is installed.')
-    #     tocheck = 'shovill' if 'shovill' in self.assembler else self.assembler
-    #     asmb_version = self.check_version(tocheck)
-        
     def run_checks(self):
         
         self.check_chewbbaca()
@@ -203,20 +173,13 @@ class RunCoreugate:
         # check that job directory exists
         # logger.info(f"Checking that reads are present.")
         
-        R = self.workdir / f"CONTIGS"
-        if not R.exists():
-            R.mkdir()
-        
-        # if f"{read_source}"[0] != '/':
-        #     read_source = self.workdir / read_source
-        
         if data_source.exists() and os.access(data_source, os.R_OK):
-            I = R / f"{isolate_id}" # the directory where contigs will be stored for the isolate
+            I = pathlib.Path(f"{isolate_id}") # the directory where contigs will be stored for the isolate
             if not I.exists():
                 I.mkdir()
-            data_target = R / I / f"{isolate_id}.fa"
+            data_target = I / f"{isolate_id}.fa"
             if not data_target.exists():
-                subprocess.run(f"cp {data_source} {data_target}", shell = True)
+                subprocess.run(f"ln -sf {data_source} {data_target}", shell = True)
                 # data_target.symlink_to(data_source)
         else:
             logger.warning(f"{data_source} does not seem to a valid path. Please check your input and try again.")
@@ -231,17 +194,18 @@ class RunCoreugate:
         '''
         self.logger.info(f"Checking that all the data files exist.")
         # pos_1 = 'R1.fq.gz' if self.input_type == 'READS' else 'contigs.fa'
+        paths = []
         for i in tab.iterrows():
             # print(i[1][0])
             if not '#' in i[1][0]:
                 c = i[1][1]
+                islt = f"{i[1][0].strip()}"
                 self._check_file(c)
-                self.link_inputs(pathlib.Path(c), isolate_id=f"{i[1][0].strip()}")
-                # if self.input_type == 'READS':
-                #     r2 = i[1][2]
-                #     self._check_file(pathlib.Path(r2))
-                #     self.link_reads(pathlib.Path(r2), isolate_id=f"{i[1][0].strip()}", data_name='R2.fq.gz')
-        return True
+                self.link_inputs(pathlib.Path(c), isolate_id=islt)
+                ctg = f"{islt}.fa"
+                paths.append(f"{pathlib.Path(islt,ctg)}")
+            
+        return paths
 
     
     def prep_external_schema(self):
@@ -301,8 +265,11 @@ class RunCoreugate:
         tab = pandas.read_csv(self.input_file, sep = '\t', header = None)
         self.check_input_file(tab = tab)
         # print(tab)
-        self.check_inputs_exists(tab = tab)
-        self.isolates = ' '.join(list(tab.iloc[ : , 0]))
+        self.contigs = self.check_inputs_exists(tab = tab)
+        # generate a generic input file for chewie
+        self.logger.info(f"Writing an input file for chewie")
+        o = pathlib.Path('contigs.txt')
+        o.write_text('\n'.join(self.contigs))
 
     def write_workflow(self):
         '''
@@ -311,7 +278,7 @@ class RunCoreugate:
         
         self.logger.info(f"Setting up specific workflow")
 
-        cfg = {
+        cfg = { 'input': 'contigs.txt',
                 'schema_path': f"{self.schema_path}",
                 'ptf':f"{self.prodigal_training}",
                 'chewie_threads': self.threads,
@@ -328,11 +295,7 @@ class RunCoreugate:
         config.write_text(config_template.render(cfg))
         self.logger.info(f'this is the schema path : {self.schema_path}')
         self.logger.info(f"Config file successfully created")
-        # template_dir = f"{pathlib.Path(self.resources, 'templates')}"
-        # rfile_template = jinja2.Template(pathlib.Path(template_dir, 'distances.R').read_text())
-        # rfile = 'distances.R'
-        # rfile.write_text(rfile_template.render(script_dir = template_dir))
-
+        
     def setup_pipeline(self):
         
         self.setup_working_directory()
@@ -363,23 +326,10 @@ class RunCoreugate:
         else:
             return False
         
-    def finish_workflow(self):
-        '''
-        final message at completion of workflow. If workflow goes to completion print 'thanks for coming message'
-        '''
-        output_stats = self.workdir / 'overall_statistics.tsv'
-        output_alleles = self.workdir / 'overall_alleles.tsv'
-        self.logger.info(f'Checking that output files are present.')
-        if output_stats.exists() and output_alleles.exists():
-            
-            self.logger.info(f"COREugate has finished.")
-            self.logger.info(f"May the force be with you.") 
-        else:
-            self.logger.warning(f"Something has gone wrong, please check logs and try again. If problem persists, contact developer.")
-        
+    
     def run_pipeline(self):
 
         self.run_checks()
         self.setup_pipeline()
         self.run_workflow()
-        # self.finish_workflow()
+        
