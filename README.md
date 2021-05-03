@@ -1,53 +1,27 @@
-[![Build Status](https://travis-ci.org/kristyhoran/Coreugate.svg?branch=master)](https://travis-ci.org/kristyhoran/Coreugate)
 
 # COREugate - A pipeline for cgMLST
-## From reads to cgMLST profile.
+## From contigs to cgMLST profile and SLC.
 
-This is a simple pipeline that allows the user to input paired-end reads or assemblies and using a user-defined cgMLST schema and will output a cgMLST profile for the isolates as well as statistics for allele calling and a matrix of pairwise allelic distances.
+COREugate has had a small facelift!! Under the hood we are now using [NextFlow](https://www.nextflow.io) as our pipeline engine and have introduced some additional functionality for clustering the profiles.
 
-1. Assemble - default using [Shovill](https://github.com/tseemann/shovill) (implementing the latest version of Spades)
-2. PrepSchema (if necessary) and Call alleles using [chewBBACA](https://github.com/B-UMMI/chewBBACA/wiki).
-3. Combine profiles and statisitics for the whole dataset.
-4. Calculate pairwise allelic distances (missing data is ignored)
+1. PrepSchema (if necessary) and Call alleles using [chewBBACA](https://github.com/B-UMMI/chewBBACA/wiki).
+2. Combine profiles and statisitics for the whole dataset.
+3. Calculate pairwise allelic distances (missing data is ignored)
+4. Perform SLC to group related profiles, based on user supplied thresholds.
 
 ### Dependencies
 ```
-Python >=3.6
+Python >=3.7
 Biopython >=1.70
-Snakemake >=5.3.0
-chewBBAC >=2.0.16
-```
-COREugate uses Shovill (with SPAdes, Skesa or Velvet or the assemblers alone) to perform assemblies. There is a singularity container of these tools available. If you do not want to use the singularity container you will need to ensure installation of these assemblers. The easiest way to do so is to install `shovill`. Detailed intructions can be found [here](https://github.com/tseemann/shovill).
-
-```
-brew install brewsci/bio/shovill
+Nextflow >=20.10
+chewBBACA >=2.6
 ```
 
-OR 
-
-```
-conda install -c bioconda shovill
-```
-
-### Biopython
-Biopython is used here for quality control of assemblies, information about biopython can be found [here](https://biopython.org)
-```
-pip3 install biopython
-```
-
-### Snakemake
-Ensure that you have Snakemake installed. Detailed instructions can be found [here](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
-
-```
-pip3 install snakemake
-```
+### NextFlow
+Ensure that you have NextFlow installed. Detailed instructions can be found [here](https://www.nextflow.io/docs/latest/getstarted.html#installation)
 
 ### chewBBACA
 [chewBBACA](https://github.com/B-UMMI/chewBBACA/) is used here to prepare the schema, by selecting exemplar alleles for comparison and to call allele profiles. More information about chewBBACA and how it is works can be found [here](https://github.com/B-UMMI/chewBBACA/wiki). COREugate can use a singularity version of chewBBACA, however if you want to install the latest version (>=2.0.16)
-
-```
-pip3 install chewbbaca
-```
 
 ### Run COREugate
 
@@ -62,41 +36,55 @@ export PATH=$PATH:/path/to/.local/bin
 ```
 
 #### Running COREugate
+
 ```
-coreugate run -h
+coreugate [-h] [-v] [--input_file INPUT_FILE]
+                 [--schema_path SCHEMA_PATH]
+                 [--prodigal_training PRODIGAL_TRAINING] [--workdir WORKDIR]
+                 [--threads THREADS]
+                 [--filter_samples_threshold FILTER_SAMPLES_THRESHOLD]
+                 [--cluster] [--cluster_thresholds CLUSTER_THRESHOLDS]
+                 [--force] [--report]
 
-Usage:
-  run [options]
+Coreugate - a cgMLST pipeline implementing chewBACCA
 
-Options:
-  -f, --input_file=INPUT_FILE                Input file - three columns <isolate_id> <path/to/R1> <path/to/R2> [default: ""]
-  -d, --schema=SCHEMA                        Path to species schema/allele db [default: ""]
-  -w, --workdir=WORKDIR                      Working directory, defaults to CWD [default: "/home/khhor/cgMLST/listeria/test"]
-  -r, --template_dir=TEMPLATE_DIR            Path to Snakefile and config.yaml templates. [default: "/home/khhor/dev/Coreugate/templates"]
-  -t, --threads=THREADS                      Number of threads for chewBBACA [default: 36]
-  -i, --id=ID                                Name of the job [default: ""]
-  -s, --singularity=SINGULARITY              Use singularity containers for assembly and chewBBACA rather than local install [default: "N"]
-  -c, --min_contig_size=MIN_CONTIG_SIZE      Minumum contig size required for QC [default: 500]
-  -m, --min_contigs=MIN_CONTIGS              Minumum number of contigs required for QC [default: 0]
-  -a, --assembler=ASSEMBLER                  Assembler to be used (options are: shovill-spades, shovil-skesa, shovill-velvet, skesa, spades) [default: "shovill-spades"]
-  -p, --prodigal_training=PRODIGAL_TRAINING  Prodigal file to be used in allele calling. See https://github.com/B-UMMI/chewBBACA/tree/master/CHEWBBACA/prodigal_training_files for options [default: ""]
-  -h, --help                                 Display this help message
+optional arguments:
+  -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
+  --input_file INPUT_FILE, -i INPUT_FILE
+                        Input file tab-delimited file3 columns isolate_id
+                        path_to_input_file (contigs) (default: )
+  --schema_path SCHEMA_PATH, -s SCHEMA_PATH
+                        Path to species schema/allele db (or url if using
+                        chewie Nomenclature server) (default: )
+  --prodigal_training PRODIGAL_TRAINING, -p PRODIGAL_TRAINING
+                        Prodigal file to be used in allele calling. See https:
+                        //github.com/B-UMMI/chewBBACA/tree/master/CHEWBBACA/pr
+                        odigal_training_files for options (default: )
+  --workdir WORKDIR, -w WORKDIR
+                        Working directory, default is current directory
+                        (default: /home/khhor/validation/salmonella_typing/rev
+                        erification_20210322)
+  --threads THREADS, -t THREADS
+                        Number of threads to run chewBACCA (default: 16)
+  --filter_samples_threshold FILTER_SAMPLES_THRESHOLD, -ft FILTER_SAMPLES_THRESHOLD
+                        The proportion of loci present in a sample for an
+                        sample to be included in further analysis (0-1)
+                        (default: 0.95)
+  --cluster, -c         If you would like to cluster the pairwise distance
+                        matrix. If selected you must provide a list of
+                        thresholds. (default: False)
+  --cluster_thresholds CLUSTER_THRESHOLDS, -ct CLUSTER_THRESHOLDS
+                        Provide a comma separate list (NO SPACES) eg 20,40,200
+                        (default: )
+  --force, -f           If you want to force chewBBACA to re-run. (default:
+                        False)
+  --report              Save nextflow reports. (default: False)
+                                 Display this help message
 ```
-**Example**
-Please read below to find further information regarding inputs.
-*Run with singularity and prodigal training file*
-```coreugate run -f test.tab -d path/to/schema -i job_id -s y -p species_prodigal_training.trn```
 
-**Input**
-You can run COREugate with paired-end reads or assemblies. For the sake of consistency it is recomended that if you are using assemblies you use assemblies constructed with the same tool, since assembler and assembler settings can greatly impact allele calling.
 
 ###### Sample data
-Sample/isolate data is in the form of a tab-delimited file containing a sample identifier and the path to reads or assemblies
-
-*Reads*
-```
-isolate_name	path/to/reads/R1.fq.gz	path/to/reads/R2.fq.gz
-```
 
 *Assemblies*
 ```
@@ -106,11 +94,6 @@ isolate_name	path/to/assembly.fa
 COREugate requires an exisiting cgMLST schema, this can be a schema generated by the user or downloaded from one of the publically available databases. These schema should be in the format of a `fasta` file for each loci, each file should contain the different alleles for each loci. It should be noted that during allele calling, chewBBACA (implemented by COREugate) will add inferred alleles ([more information](https://github.com/B-UMMI/chewBBACA/wiki)) to your schema, so it is recommended that the schema path be fixed, that is that the schema is kept in a central location and a single version is used for each species/study.
 
 ###### Other optional arguments
-* `job_id` this is compulsory and should be unique
-* `min_contig_size` defaults to 500bp, but can be user-defined.
-* `min_contigs`, user defined, although defaults to no minimum. It is recommended to determine a minimum number of contigs, since low number of contigs improves allele calling.
-* `assembler` defaults to shovill implementation of SPAdes, other options are `spades, skesa, shovill-skesa ` and `shovill-velvet`.
-* `singularity` defaults to system software versions (no singularity). To use singularity containers use `--singularity/-s Y`
 * `prodigal_training` a prodigal training file for allele calling. Recommended by chewBBACA developers, a list of default training files and further information can be found [here](https://github.com/B-UMMI/chewBBACA/wiki).
 
 
