@@ -7,7 +7,7 @@ import sys
 
 from coreugate.coreugate import RunCoreugate
 
-VERSION = '2.0.0'
+VERSION = '2.0.1'
 
 def run_pipeline(args):
     '''
