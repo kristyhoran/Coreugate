@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import pandas, sys, ast, pathlib
 
-publish_dir = pathlib.Path(sys.argv[1])
+output_file = pathlib.Path(sys.argv[1])
 threshold = sys.argv[2]
 # print(sys.argv[2:])
 statistics = []
@@ -12,8 +12,8 @@ for i in sys.argv[3:]:
 
 
 
-if publish_dir.exists():
-    df = pandas.read_csv(f"{publish_dir}", sep = '\t')
+if output_file.exists():
+    df = pandas.read_csv(f"{output_file}", sep = '\t')
 else:
     df = pandas.DataFrame()
 

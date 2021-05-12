@@ -13,7 +13,7 @@ contigs = Channel.fromPath(params.input)
 // println contigs.view()
 
 process PROFILES {
-    publishDir "${task.process}/${sample_id}", mode: 'copy'
+    publishDir "${task.process}", mode: 'copy'
     maxForks 1
     cache 'lenient'
     cpus params.threads
@@ -26,10 +26,10 @@ process PROFILES {
     script:
         """
         [ !  -f ptf.trn ] && ln -s ${params.ptf} ptf.trn
-        chewie AlleleCall -i $contigs -g $params.schema_path --ptf ${params.ptf} -o ${sample_id}_profile --cpu $task.cpus --fr
-        cp ${sample_id}_profile/results_*/results_alleles.tsv results_alleles.tsv
-        cp ${sample_id}_profile/results_*/results_statistics.tsv results_statistics.tsv
-        rm -r ${sample_id}_profile
+        chewie AlleleCall -i $contigs -g $params.schema_path --ptf ${params.ptf} -o chewie_profile --cpu $task.cpus --fr
+        cp chewie_profile/results_*/results_alleles.tsv results_alleles.tsv
+        cp chewie_profile/results_*/results_statistics.tsv results_statistics.tsv
+        rm -r chewie_profile
         """
 
 }
@@ -46,8 +46,7 @@ process COLLATE_STATS {
     script:
         
         """
-        if $launchDir/overall_statistics.txt
-        combine_statistics.py $task.process $params.profile_pass $statistics 
+        combine_statistics.py ${launchDir}/overall_statistics.txt $params.profile_pass $statistics 
         """
 }
 
@@ -62,7 +61,7 @@ process COLLATE_ALLELES {
         path('overall_alleles.txt'), emit: overall_alleles
     script:
         """
-        combine_alleles.py $task.process $passed_profile $alleles
+        combine_alleles.py ${launchDir}/overall_alleles.txt $passed_profile $alleles
         """
 }
 
@@ -95,14 +94,13 @@ process CLUSTER {
 
 workflow {
     PROFILES( contigs )
+    println 
     COLLATE_STATS ( PROFILES.out
                                 .statistics
-                                .map { sample_id, file -> file}
                                 .collect() )
     // collate alleles into a table.. only including ones that have more than the threshold set ie 0.95
     COLLATE_ALLELES ( PROFILES.out
                                 .alleles
-                                .map { sample_id, file -> file}
                                 .collect(),
                       COLLATE_STATS.out.passed_profile)
     PAIRWISE_DISTANCE ( COLLATE_ALLELES.out.overall_alleles )

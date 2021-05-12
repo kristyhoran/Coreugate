@@ -164,7 +164,7 @@ class RunCoreugate:
             self.logger.critical(f"Your input file is not in the correct format. The input file should be a tab-delimited file, column 1 is isolate ID and column 2 is path to contigs, with no header line. Exiting....")
             raise SystemExit
         return True
-        
+
     def link_inputs(self, data_source, isolate_id):
         '''
         check if read source exists if so check if target exists - if not create isolate dir and link. If already exists report that a dupilcation may have occured in input and procedd
@@ -174,17 +174,18 @@ class RunCoreugate:
         # logger.info(f"Checking that reads are present.")
         
         if data_source.exists() and os.access(data_source, os.R_OK):
-            I = pathlib.Path(f"{isolate_id}") # the directory where contigs will be stored for the isolate
+            I = pathlib.Path(f"{isolate_id}").absolute() # the directory where contigs will be stored for the isolate
             if not I.exists():
                 I.mkdir()
             data_target = I / f"{isolate_id}.fa"
             if not data_target.exists():
                 subprocess.run(f"ln -sf {data_source} {data_target}", shell = True)
                 # data_target.symlink_to(data_source)
+            return data_target
         else:
             logger.warning(f"{data_source} does not seem to a valid path. Please check your input and try again.")
             raise SystemExit()
-    
+        
     def check_inputs_exists(self, tab):
         '''
         check that the correct paths have been given
@@ -201,9 +202,9 @@ class RunCoreugate:
                 c = i[1][1]
                 islt = f"{i[1][0].strip()}"
                 self._check_file(c)
-                self.link_inputs(pathlib.Path(c), isolate_id=islt)
+                path = self.link_inputs(pathlib.Path(c), isolate_id=islt)
                 ctg = f"{islt}.fa"
-                paths.append(f"{pathlib.Path(islt,ctg)}")
+                paths.append(f"{path}")
             
         return paths
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import pandas, sys, ast, pathlib
 
-publish_dir = pathlib.Path(sys.argv[1])
+output_file = pathlib.Path(sys.argv[1])
 # print(sys.argv[2:])
 if pathlib.Path(sys.argv[2]).exists:
     with open(sys.argv[2], 'r') as ps:
@@ -13,8 +13,8 @@ for i in sys.argv[3:]:
     alleles.append(l)
 
 
-if publish_dir.exists():
-    df = pandas.read_csv(f"{publish_dir}", sep = '\t')
+if output_file.exists():
+    df = pandas.read_csv(f"{output_file}", sep = '\t')
 else:
     df = pandas.DataFrame()
 
