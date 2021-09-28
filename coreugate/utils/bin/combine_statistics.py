@@ -16,15 +16,17 @@ if output_file.exists():
     df = pandas.read_csv(f"{output_file}", sep = '\t')
 else:
     df = pandas.DataFrame()
-
+print(df)
 for s in statistics:
     if pathlib.Path(s).exists():
         tmp = pandas.read_csv(s, sep = '\t')
-
+        print(tmp.shape)
         if df.empty:
             df = tmp
         else:
-            df = df.append(tmp)
+            df = df.append(tmp).drop_duplicates()
+        print(df.shape)
+# df = df.drop_duplicates(subset = 'Genome')
 df['ID'] = df['Genome'].str.replace("\.fa([a-z])*", "", regex = True)
 df['TOTAL'] = df[[ "EXC","INF","LNF","PLOT","NIPH","ALM","ASM"]].apply(lambda x: sum(x), axis = 1)
 df['PASSED'] = df[["EXC","INF","TOTAL"]].apply(lambda x:sum(x[:2])/x[2], axis = 1)

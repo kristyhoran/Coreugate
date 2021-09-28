@@ -3,11 +3,7 @@ nextflow.enable.dsl=2
 
 params.schema_path = file(params.schema_path)
 params.ptf = file(params.ptf)
-// params.threads = 36
-// params.force = true
-// params.profile_pass = 0.95
-// params.cluster = true
-// params.thresholds = [20,50]
+
 
 contigs = Channel.fromPath(params.input)
 // println contigs.view()
@@ -73,8 +69,9 @@ process PAIRWISE_DISTANCE {
     output:
         path('pad.txt'), emit: dists
     script:
+        def lines = file(overall_alleles).countLines() - 1
         """
-        cgmlst-dists $overall_alleles > pad.txt
+        cgmlst-dists $overall_alleles | sed "s/cgmlst-dists/$lines/g" > pad.txt
         """
 
 }
@@ -92,9 +89,22 @@ process CLUSTER {
         """
 }
 
+process RAPIDNJ {
+    publishDir "$launchDir", mode: 'copy'
+
+    input:
+        path pad
+    output:
+        path('pad.nwk'), emit: tree
+    script:
+        """
+        rapidnj -i pd -o t -x pad.nwk $pad
+        """
+}
+
+
 workflow {
     PROFILES( contigs )
-    println 
     COLLATE_STATS ( PROFILES.out
                                 .statistics
                                 .collect() )
@@ -104,7 +114,7 @@ workflow {
                                 .collect(),
                       COLLATE_STATS.out.passed_profile)
     PAIRWISE_DISTANCE ( COLLATE_ALLELES.out.overall_alleles )
-    
+    RAPIDNJ ( PAIRWISE_DISTANCE.out.dists )
     if( params.cluster ) {
         CLUSTER ( PAIRWISE_DISTANCE.out.dists)
     }

@@ -7,7 +7,7 @@ import sys
 
 from coreugate.coreugate import RunCoreugate
 
-VERSION = '2.0.4'
+VERSION = '2.0.5'
 
 def run_pipeline(args):
     '''
@@ -48,7 +48,7 @@ def set_parsers():
     parser.add_argument(
         '--filter_samples_threshold',
         '-ft',
-        default= 0.95,
+        default= 0.90,
         help = f"The proportion of loci present in a sample for an sample to be included in further analysis (0-1)"
         )
     parser.add_argument(

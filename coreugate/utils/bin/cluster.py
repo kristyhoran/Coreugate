@@ -32,7 +32,7 @@ if pathlib.Path(tabfile).exists():
                     mat.append(ln[1:len(ln)])
        
             isos = tab[0].split('\t')[1:]
-    
+    print(len(mat))
     clusters = pandas.DataFrame()
     # convery the lists to a numpy array
     print("converting matrix to numpy array")
@@ -40,22 +40,28 @@ if pathlib.Path(tabfile).exists():
     X = X.astype(numpy.float64)
     
     for level in thresholds:
-        print(f"clustering at {level}")
+        print(f"Clustering at {level}")
         clustering = AgglomerativeClustering(n_clusters = None, affinity = 'precomputed',linkage = 'complete', distance_threshold =int(level)).fit(X)
         df = pandas.DataFrame(data = {'ID': isos, f"Tx:{level}": clustering.labels_})
+        print(len(clustering.labels_))
+        print(len(isos))
+        print(df.shape)
+        
         print(len(df[f"Tx:{level}"].unique()))
         df[f"Tx:{level}"] = df[f"Tx:{level}"] + 1
         df = df.fillna('')
         df[f"Tx:{level}"] = df[f"Tx:{level}"].apply(lambda x: f"{x}")
-       
+        print(df.shape)
         
         uc = extract_unclustered(df = df, col = f"Tx:{level}", col1 = 'ID')
         df[f"Tx:{level}"] = numpy.where(df[f"Tx:{level}"].isin(uc), 'UC', df[f"Tx:{level}"])
+        df = df.drop_duplicates(subset=['ID'])
         if clusters.empty:
             clusters = df
         else:
-            clusters = pandas.merge(df, clusters)
-       
+            clusters = df.merge(clusters, right_on = 'ID',left_on ='ID', how = 'inner')
+        clusters = clusters.drop_duplicates()
+        print(clusters.shape)
     clusters = clusters.fillna('')
 
     clusters.to_csv('clusters.txt', sep = '\t', index = False)

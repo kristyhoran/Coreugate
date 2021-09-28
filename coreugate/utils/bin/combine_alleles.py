@@ -14,20 +14,23 @@ for i in sys.argv[3:]:
 
 
 if output_file.exists():
-    df = pandas.read_csv(f"{output_file}", sep = '\t')
+    df = pandas.read_csv(f"{output_file}", sep = '\t', dtype = str)
 else:
     df = pandas.DataFrame()
-
+print(passed)
 for a in alleles:
     if pathlib.Path(a).exists():
-        tmp = pandas.read_csv(a, sep = '\t')
+        print(a)
+        tmp = pandas.read_csv(a, sep = '\t', dtype = str)
         tmp['FILE'] = tmp['FILE'].str.replace("\.fa([a-z])*", "", regex = True)
-        if tmp.at[0,'FILE'] in passed:
+        print(tmp)
+        tmp = tmp[tmp['FILE'].isin(passed)]
+        # if tmp.at[0,'FILE'] in passed:
             
-            if df.empty:
-                df = tmp
-            else:
-                df = df.append(tmp)
+        if df.empty:
+            df = tmp
+        else:
+            df = df.append(tmp).drop_duplicates()
 
 
 

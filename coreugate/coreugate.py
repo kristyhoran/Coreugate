@@ -306,7 +306,7 @@ class RunCoreugate:
         '''
         run Coreugate
         set the current directory to working dir for correct running of pipeline if singularity = Y then run with singularity
-        if the pipeline wroks, return True else False
+        if the pipeline works, return True else False
         '''
         resume = f"" if self.force else "-resume"
         report = "-with-report coreugate_resource_report.html -with-trace"
