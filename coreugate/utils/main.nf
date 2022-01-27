@@ -1,8 +1,8 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2   
 
-params.schema_path = file(params.schema_path)
-params.ptf = file(params.ptf)
+// params.schema_path = file(params.schema_path)
+// params.ptf = file(params.ptf)
 
 
 contigs = Channel.fromPath(params.input)
@@ -32,7 +32,7 @@ process PROFILES {
 
 
 process COLLATE_STATS {
-    publishDir "$launchDir", mode: 'copy'
+    publishDir "${params.publish_dir}", mode: 'copy'
 
     input:
         val(statistics)
@@ -48,7 +48,7 @@ process COLLATE_STATS {
 
 
 process COLLATE_ALLELES {
-    publishDir "$launchDir", mode: 'copy'
+    publishDir "${params.publish_dir}", mode: 'copy'
 
     input:
         val(alleles)
@@ -57,27 +57,28 @@ process COLLATE_ALLELES {
         path('overall_alleles.txt'), emit: overall_alleles
     script:
         """
-        combine_alleles.py ${launchDir}/overall_alleles.txt $passed_profile $alleles
+        combine_alleles.py "${params.publish_dir}"/overall_alleles.txt $passed_profile $alleles
         """
 }
 
 process PAIRWISE_DISTANCE {
-    publishDir "$launchDir", mode: 'copy'
+    publishDir "${params.publish_dir}", mode: 'copy'
 
     input:
         path overall_alleles
     output:
         path('pad.txt'), emit: dists
     script:
-        def lines = file(overall_alleles).countLines() - 1
+        // def lines = file(overall_alleles).countLines() - 1
         """
-        cgmlst-dists $overall_alleles | sed "s/cgmlst-dists/$lines/g" > pad.txt
+        x=\$(csvtk nrows $overall_alleles)
+        cgmlst-dists $overall_alleles | sed "s/cgmlst-dists/\$x/g" > pad.txt
         """
 
 }
 
 process CLUSTER {
-    publishDir "$launchDir", mode: 'copy'
+    publishDir "${launchDir}", mode: 'copy'
 
     input:
         path pad
@@ -90,7 +91,7 @@ process CLUSTER {
 }
 
 process RAPIDNJ {
-    publishDir "$launchDir", mode: 'copy'
+    publishDir "${params.publish_dir}", mode: 'copy'
 
     input:
         path pad

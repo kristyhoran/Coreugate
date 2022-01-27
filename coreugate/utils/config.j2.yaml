@@ -7,5 +7,6 @@ params {
     profile_pass = {{ filter_threshold }}
     cluster = {{ cluster }}
     thresholds = '{{ cluster_threshold }}'
+    publish_dir = '{{ publish_dir }}'
 
 }

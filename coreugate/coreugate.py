@@ -130,7 +130,7 @@ class RunCoreugate:
             self.logger.info(f"{software} {sft_version} found. Good job!")
             return sft_version
         except FileNotFoundError:
-            logger.info(f"{software} is not installed.")
+            self.logger.info(f"{software} is not installed.")
             raise SystemExit
     
 
@@ -183,7 +183,7 @@ class RunCoreugate:
                 # data_target.symlink_to(data_source)
             return data_target
         else:
-            logger.warning(f"{data_source} does not seem to a valid path. Please check your input and try again.")
+            self.logger.warning(f"{data_source} does not seem to a valid path. Please check your input and try again.")
             raise SystemExit()
         
     def check_inputs_exists(self, tab):
@@ -195,12 +195,14 @@ class RunCoreugate:
         '''
         self.logger.info(f"Checking that all the data files exist.")
         # pos_1 = 'R1.fq.gz' if self.input_type == 'READS' else 'contigs.fa'
+        # print(tab)
         paths = []
         for i in tab.iterrows():
-            # print(i[1][0])
-            if not '#' in i[1][0]:
+            # print(type(i[1][0]))
+            # print(i)
+            if not '#' in f"{i[1][0]}":
                 c = i[1][1]
-                islt = f"{i[1][0].strip()}"
+                islt = f"{i[1][0]}".strip()
                 self._check_file(c)
                 path = self.link_inputs(pathlib.Path(c), isolate_id=islt)
                 ctg = f"{islt}.fa"
@@ -286,7 +288,8 @@ class RunCoreugate:
                 'force': 'false',
                 'filter_threshold': self.filter_threshold,
                 'cluster': f"{self.cluster}".lower(),
-                'cluster_threshold':self.cluster_thresholds
+                'cluster_threshold':self.cluster_thresholds,
+                'publish_dir': self.workdir
         }        
         # read the config file which is written with jinja2 placeholders (like django template language)
         template_dir = f"{pathlib.Path(__file__).parent / 'utils'}"
@@ -311,7 +314,7 @@ class RunCoreugate:
         resume = f"" if self.force else "-resume"
         report = "-with-report coreugate_resource_report.html -with-trace"
         extra_args = f"{resume} {report}"
-        cmd = f"nextflow {pathlib.Path(__file__).parent / 'utils' / 'main.nf'} {extra_args}"
+        cmd = f"nextflow {pathlib.Path(__file__).parent / 'utils' / 'main.nf'} -c {self.workdir /'nextflow.config'}  {extra_args}"
         self.logger.info(f"Running {cmd} - patient you must be.")
         wkf = subprocess.run(cmd, shell = True)
         while True:
